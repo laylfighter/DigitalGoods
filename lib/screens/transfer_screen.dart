@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../theme.dart';
 
 import '../blockchain/blockchain_service.dart';
+import '../blockchain/wallet_service.dart';
 import '../services/push_notification_service.dart';
 import 'review_screen.dart';
 
@@ -24,7 +25,8 @@ class TransferScreen extends StatefulWidget {
   final int? fractionAmount;
   final String assetPrice;
   final String buyerName;
-  final String sellerName; // FIX Bug 2: was missing, referenced in _buildHeaderCard
+  final String
+  sellerName; // FIX Bug 2: was missing, referenced in _buildHeaderCard
 
   const TransferScreen({
     super.key,
@@ -68,7 +70,8 @@ class _TransferScreenState extends State<TransferScreen> {
 
   String get _trimmedTransactionId => widget.transactionId.trim();
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?> _transactionSnapshotOrNull() async {
+  Future<DocumentSnapshot<Map<String, dynamic>>?>
+  _transactionSnapshotOrNull() async {
     if (_trimmedTransactionId.isEmpty) return null;
     return _db.collection('transactions').doc(_trimmedTransactionId).get();
   }
@@ -127,7 +130,9 @@ class _TransferScreenState extends State<TransferScreen> {
             content: Text('Wallet connected: ${addr.substring(0, 10)}...'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -138,7 +143,9 @@ class _TransferScreenState extends State<TransferScreen> {
             content: Text('Wallet error: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -187,7 +194,9 @@ class _TransferScreenState extends State<TransferScreen> {
         final currentOwner = (doc.data()?['ownerId'] as String?) ?? '';
         final expectedOwner = snapshot[doc.id]!;
         if (currentOwner != expectedOwner) {
-          debugPrint('Restoring sibling \${doc.id}: \$currentOwner => \$expectedOwner');
+          debugPrint(
+            'Restoring sibling \${doc.id}: \$currentOwner => \$expectedOwner',
+          );
           batch.update(doc.reference, {
             'ownerId': expectedOwner,
             'ownerUid': expectedOwner,
@@ -313,9 +322,13 @@ class _TransferScreenState extends State<TransferScreen> {
         }
 
         if (!isLand && widget.tokenId != null) {
-          final onChainOwner = await _bs.getOwnerOf('electronics', widget.tokenId!);
+          final onChainOwner = await _bs.getOwnerOf(
+            'electronics',
+            widget.tokenId!,
+          );
           if (onChainOwner != null &&
-              onChainOwner.toLowerCase() == _buyerWalletAddress!.toLowerCase()) {
+              onChainOwner.toLowerCase() ==
+                  _buyerWalletAddress!.toLowerCase()) {
             return '';
           }
         } else if (isLand && widget.propertyId != null) {
@@ -338,14 +351,18 @@ class _TransferScreenState extends State<TransferScreen> {
 
   Future<void> _executeTransfer() async {
     if (_isStolen) {
-      setState(() => _errorMessage =
-      'This asset is reported stolen and cannot be transferred.');
+      setState(
+        () => _errorMessage =
+            'This asset is reported stolen and cannot be transferred.',
+      );
       return;
     }
 
     if (_buyerWalletAddress == null || _buyerWalletAddress!.isEmpty) {
-      setState(() => _errorMessage =
-      'Buyer has not connected a wallet yet. Ask them to connect their wallet in the app first.');
+      setState(
+        () => _errorMessage =
+            'Buyer has not connected a wallet yet. Ask them to connect their wallet in the app first.',
+      );
       return;
     }
 
@@ -355,7 +372,7 @@ class _TransferScreenState extends State<TransferScreen> {
       _statusMessage = 'Preparing transaction…';
     });
 
-    final isLand    = widget.assetType == AssetType.land;
+    final isLand = widget.assetType == AssetType.land;
     final assetLabel = _assetTitle ?? 'Asset';
     int? buyerFractionsBefore;
     int? transferStartBlock;
@@ -372,7 +389,9 @@ class _TransferScreenState extends State<TransferScreen> {
       await _bs.init();
       sellerWalletAddress = _bs.connectedAddress;
       if (sellerWalletAddress == null || sellerWalletAddress!.isEmpty) {
-        throw Exception('Seller wallet is not connected. Please reconnect MetaMask.');
+        throw Exception(
+          'Seller wallet is not connected. Please reconnect MetaMask.',
+        );
       }
 
       final preflightError = await _validateTransferBeforeMetaMask(
@@ -400,19 +419,24 @@ class _TransferScreenState extends State<TransferScreen> {
       await Future.wait([
         _notif.notify(
           receiverUid: widget.sellerUid,
-          title       : '⏳ Transfer Initiated',
-          body        : 'Blockchain transfer of "$assetLabel" to ${widget.buyerName} is in progress.',
-          type        : NotificationType.transactionPending,
-          relatedId   : widget.transactionId,
-          payload     : {'assetId': widget.assetId, 'assetType': isLand ? 'land' : 'electronics'},
+          title: '⏳ Transfer Initiated',
+          body:
+              'Blockchain transfer of "$assetLabel" to ${widget.buyerName} is in progress.',
+          type: NotificationType.transactionPending,
+          relatedId: widget.transactionId,
+          payload: {
+            'assetId': widget.assetId,
+            'assetType': isLand ? 'land' : 'electronics',
+          },
         ),
         _notif.notify(
           receiverUid: widget.buyerUid,
-          title       : '⏳ Transfer In Progress',
-          body        : 'The seller is transferring "$assetLabel" to your wallet. This may take a minute.',
-          type        : NotificationType.transactionPending,
-          relatedId   : widget.transactionId,
-          payload     : {'assetId': widget.assetId},
+          title: '⏳ Transfer In Progress',
+          body:
+              'The seller is transferring "$assetLabel" to your wallet. This may take a minute.',
+          type: NotificationType.transactionPending,
+          relatedId: widget.transactionId,
+          payload: {'assetId': widget.assetId},
         ),
       ]);
 
@@ -420,28 +444,44 @@ class _TransferScreenState extends State<TransferScreen> {
 
       if (widget.assetType == AssetType.electronics) {
         final id = widget.tokenId;
-        if (id == null) throw Exception('Missing tokenId for electronics transfer');
-        setState(() => _statusMessage =
-        'Sending NFT transfer to blockchain…\nPlease approve in your wallet.');
+        if (id == null)
+          throw Exception('Missing tokenId for electronics transfer');
+        setState(
+          () => _statusMessage =
+              'Sending NFT transfer to blockchain…\nPlease approve in your wallet.',
+        );
         blockchainRequestSent = true;
-        txHash = await _bs.transferElectronics(toAddress: _buyerWalletAddress!, tokenId: id);
+        txHash = await _bs.transferElectronics(
+          toAddress: _buyerWalletAddress!,
+          tokenId: id,
+        );
       } else {
         final pid = widget.propertyId;
         final amount = widget.fractionAmount ?? 1;
-        if (pid == null) throw Exception('Missing propertyId for land transfer');
-        setState(() => _statusMessage =
-        'Sending land fraction transfer…\nPlease approve in your wallet.');
+        if (pid == null)
+          throw Exception('Missing propertyId for land transfer');
+        setState(
+          () => _statusMessage =
+              'Sending land fraction transfer…\nPlease approve in your wallet.',
+        );
         blockchainRequestSent = true;
         txHash = await _bs.transferLandFraction(
-            toAddress: _buyerWalletAddress!, propertyId: pid, amount: amount);
+          toAddress: _buyerWalletAddress!,
+          propertyId: pid,
+          amount: amount,
+        );
       }
 
-      if (txHash == null) throw Exception('Transaction was not submitted. Check your wallet.');
+      if (txHash == null)
+        throw Exception('Transaction was not submitted. Check your wallet.');
 
       txHash = txHash.trim();
-      debugPrint('🔍 blockchain returned (trimmed): "$txHash" len=${txHash.length}');
+      debugPrint(
+        '🔍 blockchain returned (trimmed): "$txHash" len=${txHash.length}',
+      );
 
-      final isValidHash = txHash.startsWith('0x') &&
+      final isValidHash =
+          txHash.startsWith('0x') &&
           txHash.length == 66 &&
           RegExp(r'^0x[0-9a-fA-F]{64}$').hasMatch(txHash);
 
@@ -454,31 +494,40 @@ class _TransferScreenState extends State<TransferScreen> {
             lower.contains('4001') ||
             lower.contains('wallet response was unclear')) {
           throw Exception(
-              'Wallet response was unclear after MetaMask request: $txHash');
+            'Wallet response was unclear after MetaMask request: $txHash',
+          );
         }
         if (lower.contains('insufficient') || lower.contains('gas')) {
           throw Exception(
-              'Not enough MATIC for gas fees. Add MATIC to your wallet on Polygon Amoy and try again.');
+            'Not enough MATIC for gas fees. Add MATIC to your wallet on Polygon Amoy and try again.',
+          );
         }
         if (lower.contains('revert') || lower.contains('execution reverted')) {
           throw Exception(
-              'Contract reverted the transaction. Make sure this wallet holds the NFT/fractions being transferred.\n\nRaw: $txHash');
+            'Contract reverted the transaction. Make sure this wallet holds the NFT/fractions being transferred.\n\nRaw: $txHash',
+          );
         }
         throw Exception(
-            'Unexpected wallet response — raw value:\n\n$txHash\n\nCheck MetaMask is on Polygon Amoy and this wallet holds the asset.');
+          'Unexpected wallet response — raw value:\n\n$txHash\n\nCheck MetaMask is on Polygon Amoy and this wallet holds the asset.',
+        );
       }
 
       setState(() {
         _txHash = txHash;
         _statusMessage =
-        'Transaction submitted ✅\nWaiting for blockchain confirmation…\n\n$txHash';
+            'Transaction submitted ✅\nWaiting for blockchain confirmation…\n\n$txHash';
       });
 
       final confirmed = await _pollConfirmation(txHash);
       if (!confirmed)
-        throw Exception('Transaction not confirmed after timeout. Check Polygonscan for hash:\n$txHash');
+        throw Exception(
+          'Transaction not confirmed after timeout. Check Polygonscan for hash:\n$txHash',
+        );
 
-      setState(() => _statusMessage = 'Confirmed on-chain ✅\nUpdating ownership records…');
+      setState(
+        () => _statusMessage =
+            'Confirmed on-chain ✅\nUpdating ownership records…',
+      );
 
       // ── Bug 2 guard: verify on-chain owner BEFORE writing Firestore ───────
       // WalletConnect sometimes returns a valid-format tx hash for a session that
@@ -488,13 +537,17 @@ class _TransferScreenState extends State<TransferScreen> {
       if (widget.assetType == AssetType.electronics && widget.tokenId != null) {
         try {
           await _bs.init();
-          final onChainOwner = await _bs.getOwnerOf('electronics', widget.tokenId!);
+          final onChainOwner = await _bs.getOwnerOf(
+            'electronics',
+            widget.tokenId!,
+          );
           if (onChainOwner != null &&
-              onChainOwner.toLowerCase() != _buyerWalletAddress!.toLowerCase()) {
+              onChainOwner.toLowerCase() !=
+                  _buyerWalletAddress!.toLowerCase()) {
             throw Exception(
               'On-chain verification failed: the NFT owner is still '
-                  '\${onChainOwner.substring(0, 10)}… — the blockchain transfer did '
-                  'not complete. Please try again.',
+              '\${onChainOwner.substring(0, 10)}… — the blockchain transfer did '
+              'not complete. Please try again.',
             );
           }
         } catch (e) {
@@ -513,16 +566,16 @@ class _TransferScreenState extends State<TransferScreen> {
       final typeLabel = isLand ? 'Land fraction(s)' : 'Device';
       await Future.wait([
         _notif.notifyProductSold(
-          sellerUid  : widget.sellerUid,
+          sellerUid: widget.sellerUid,
           productName: assetLabel,
-          amount     : widget.assetPrice,
-          orderId    : widget.transactionId,
+          amount: widget.assetPrice,
+          orderId: widget.transactionId,
         ),
         _notif.notifyProductPurchased(
-          buyerUid   : widget.buyerUid,
+          buyerUid: widget.buyerUid,
           productName: assetLabel,
-          amount     : widget.assetPrice,
-          orderId    : widget.transactionId,
+          amount: widget.assetPrice,
+          orderId: widget.transactionId,
         ),
       ]);
 
@@ -549,12 +602,13 @@ class _TransferScreenState extends State<TransferScreen> {
           });
         }
 
-        final recoveredTxHash = await _recoverTransferAfterUnclearWalletResponse(
-          isLand: isLand,
-          buyerFractionsBefore: buyerFractionsBefore,
-          transferStartBlock: transferStartBlock,
-          sellerWalletAddress: sellerWalletAddress,
-        );
+        final recoveredTxHash =
+            await _recoverTransferAfterUnclearWalletResponse(
+              isLand: isLand,
+              buyerFractionsBefore: buyerFractionsBefore,
+              transferStartBlock: transferStartBlock,
+              sellerWalletAddress: sellerWalletAddress,
+            );
 
         if (recoveredTxHash != null) {
           _txHash = recoveredTxHash.isNotEmpty ? recoveredTxHash : null;
@@ -564,16 +618,16 @@ class _TransferScreenState extends State<TransferScreen> {
 
           await Future.wait([
             _notif.notifyProductSold(
-              sellerUid  : widget.sellerUid,
+              sellerUid: widget.sellerUid,
               productName: assetLabel,
-              amount     : widget.assetPrice,
-              orderId    : widget.transactionId,
+              amount: widget.assetPrice,
+              orderId: widget.transactionId,
             ),
             _notif.notifyProductPurchased(
-              buyerUid   : widget.buyerUid,
+              buyerUid: widget.buyerUid,
               productName: assetLabel,
-              amount     : widget.assetPrice,
-              orderId    : widget.transactionId,
+              amount: widget.assetPrice,
+              orderId: widget.transactionId,
             ),
           ]);
 
@@ -605,17 +659,18 @@ class _TransferScreenState extends State<TransferScreen> {
         // Notify both parties about the failure only after a wallet request was sent.
         await Future.wait([
           _notif.notifyTransactionFailed(
-            userUid  : widget.sellerUid,
-            amount   : widget.assetPrice,
-            currency : 'PKR',
-            reason   : 'Transfer of "$assetLabel" could not be completed.',
+            userUid: widget.sellerUid,
+            amount: widget.assetPrice,
+            currency: 'PKR',
+            reason: 'Transfer of "$assetLabel" could not be completed.',
             transactionId: widget.transactionId,
           ),
           _notif.notifyTransactionFailed(
-            userUid  : widget.buyerUid,
-            amount   : widget.assetPrice,
-            currency : 'PKR',
-            reason   : 'Transfer of "$assetLabel" by seller failed. Please contact support.',
+            userUid: widget.buyerUid,
+            amount: widget.assetPrice,
+            currency: 'PKR',
+            reason:
+                'Transfer of "$assetLabel" by seller failed. Please contact support.',
             transactionId: widget.transactionId,
           ),
         ]);
@@ -634,16 +689,18 @@ class _TransferScreenState extends State<TransferScreen> {
     const rpcUrl = 'https://rpc-amoy.polygon.technology';
     for (int i = 0; i < retries; i++) {
       try {
-        final resp = await http.post(
-          Uri.parse(rpcUrl),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'jsonrpc': '2.0',
-            'method': 'eth_getTransactionReceipt',
-            'params': [txHash],
-            'id': 1,
-          }),
-        ).timeout(const Duration(seconds: 10));
+        final resp = await http
+            .post(
+              Uri.parse(rpcUrl),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'jsonrpc': '2.0',
+                'method': 'eth_getTransactionReceipt',
+                'params': [txHash],
+                'id': 1,
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
         final body = jsonDecode(resp.body) as Map<String, dynamic>;
         final result = body['result'];
@@ -651,13 +708,17 @@ class _TransferScreenState extends State<TransferScreen> {
           final status = result['status'] as String?;
           if (status == '0x1') return true;
           if (status == '0x0')
-            throw Exception('Transaction reverted on-chain. Check contract permissions.');
+            throw Exception(
+              'Transaction reverted on-chain. Check contract permissions.',
+            );
         }
       } catch (e) {
         if (e.toString().contains('reverted')) rethrow;
       }
-      setState(() => _statusMessage =
-      'Waiting for confirmation… (attempt ${i + 1}/$retries)\n\nTx: $_txHash');
+      setState(
+        () => _statusMessage =
+            'Waiting for confirmation… (attempt ${i + 1}/$retries)\n\nTx: $_txHash',
+      );
       await Future.delayed(const Duration(seconds: 3));
     }
     return false;
@@ -795,15 +856,23 @@ class _TransferScreenState extends State<TransferScreen> {
   @override
   Widget build(BuildContext context) {
     final isLand = widget.assetType == AssetType.land;
-    final title = isLand ? 'Transfer Land Ownership' : 'Transfer Electronics Ownership';
+    final title = isLand
+        ? 'Transfer Land Ownership'
+        : 'Transfer Electronics Ownership';
 
     PreferredSizeWidget appBar = AppBar(
       title: Text(title, style: AppTheme.heading(18, color: Colors.white)),
-      flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppTheme.primaryGradient)),
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+      ),
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
     );
@@ -844,12 +913,20 @@ class _TransferScreenState extends State<TransferScreen> {
               color: Colors.red[50],
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.report_problem_rounded, color: Colors.red[600], size: 68),
+            child: Icon(
+              Icons.report_problem_rounded,
+              color: Colors.red[600],
+              size: 68,
+            ),
           ),
           const SizedBox(height: 24),
           const Text(
             '🚨 Transfer Blocked',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -866,7 +943,11 @@ class _TransferScreenState extends State<TransferScreen> {
               children: [
                 Text(
                   '"${_assetTitle ?? 'This asset'}" has been reported as stolen by its registered owner.',
-                  style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Colors.black87,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
@@ -874,7 +955,11 @@ class _TransferScreenState extends State<TransferScreen> {
                 const SizedBox(height: 12),
                 const Text(
                   'This transfer cannot proceed. The asset is locked until the stolen report is resolved.',
-                  style: TextStyle(fontSize: 13, height: 1.5, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: Colors.black54,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -908,7 +993,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 side: BorderSide(color: Colors.grey[300]!),
                 foregroundColor: Colors.black87,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -931,18 +1018,30 @@ class _TransferScreenState extends State<TransferScreen> {
                 color: Colors.green[50],
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 72),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.green,
+                size: 72,
+              ),
             ),
             const SizedBox(height: 24),
             const Text(
               'Ownership Transferred!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
               '${widget.buyerName} is now the official owner of $_assetTitle.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: Colors.grey[600], height: 1.5),
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
             ),
             if (_txHash != null) ...[
               const SizedBox(height: 20),
@@ -955,7 +1054,11 @@ class _TransferScreenState extends State<TransferScreen> {
                 ),
                 child: SelectableText(
                   'Tx: $_txHash',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500], fontFamily: 'monospace'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                    fontFamily: 'monospace',
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -967,12 +1070,12 @@ class _TransferScreenState extends State<TransferScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => ReviewScreen(
-                    reviewerUid  : widget.sellerUid,
-                    revieweeUid  : widget.buyerUid,
-                    revieweeName : widget.buyerName,
+                    reviewerUid: widget.sellerUid,
+                    revieweeUid: widget.buyerUid,
+                    revieweeName: widget.buyerName,
                     transactionId: widget.transactionId,
-                    assetId      : widget.assetId,
-                    reviewerRole : 'seller',
+                    assetId: widget.assetId,
+                    reviewerRole: 'seller',
                   ),
                 ),
               ),
@@ -982,7 +1085,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 backgroundColor: const Color(0xFF00695C),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(240, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 elevation: 0,
               ),
             ),
@@ -993,7 +1098,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 minimumSize: const Size(240, 48),
                 side: BorderSide(color: Colors.grey[300]!),
                 foregroundColor: Colors.black54,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Done'),
             ),
@@ -1007,12 +1114,16 @@ class _TransferScreenState extends State<TransferScreen> {
   Widget _buildStepperView(bool isLand) {
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: Theme.of(context).colorScheme.copyWith(primary: AppTheme.primaryStart),
+        colorScheme: Theme.of(
+          context,
+        ).colorScheme.copyWith(primary: AppTheme.primaryStart),
       ),
       child: Stepper(
         currentStep: _currentStep,
         onStepContinue: _onStepContinue,
-        onStepCancel: _currentStep > 0 ? () => setState(() => _currentStep--) : null,
+        onStepCancel: _currentStep > 0
+            ? () => setState(() => _currentStep--)
+            : null,
         controlsBuilder: _buildStepControls,
         connectorColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return _accent;
@@ -1034,12 +1145,17 @@ class _TransferScreenState extends State<TransferScreen> {
     final totalSteps = isLand ? 5 : 4;
 
     // FIX Bug 5: Prevent advancing past step 1 if buyer has no wallet
-    if (_currentStep == 1 && (_buyerWalletAddress == null || _buyerWalletAddress!.isEmpty)) {
+    if (_currentStep == 1 &&
+        (_buyerWalletAddress == null || _buyerWalletAddress!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('The buyer must connect their wallet before you can proceed.'),
+          content: const Text(
+            'The buyer must connect their wallet before you can proceed.',
+          ),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       return;
@@ -1050,7 +1166,9 @@ class _TransferScreenState extends State<TransferScreen> {
         SnackBar(
           content: const Text('Please connect your wallet first.'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       return;
@@ -1058,9 +1176,13 @@ class _TransferScreenState extends State<TransferScreen> {
     if (isLand && _currentStep == 3 && !_legalConfirmed) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please confirm legal paperwork before proceeding.'),
+          content: const Text(
+            'Please confirm legal paperwork before proceeding.',
+          ),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       return;
@@ -1100,7 +1222,11 @@ class _TransferScreenState extends State<TransferScreen> {
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: TextStyle(color: Colors.red[800], fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                        color: Colors.red[800],
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -1117,7 +1243,11 @@ class _TransferScreenState extends State<TransferScreen> {
                 Text(
                   _statusMessage,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    height: 1.5,
+                  ),
                 ),
               ],
             )
@@ -1125,10 +1255,14 @@ class _TransferScreenState extends State<TransferScreen> {
             ElevatedButton(
               onPressed: details.onStepContinue,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isLastStep ? AppTheme.primaryStart : AppTheme.primaryStart,
+                backgroundColor: isLastStep
+                    ? AppTheme.primaryStart
+                    : AppTheme.primaryStart,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
               child: Text(
@@ -1144,7 +1278,9 @@ class _TransferScreenState extends State<TransferScreen> {
                   minimumSize: const Size.fromHeight(48),
                   side: BorderSide(color: Colors.grey[300]!),
                   foregroundColor: Colors.black54,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Back'),
               ),
@@ -1175,10 +1311,18 @@ class _TransferScreenState extends State<TransferScreen> {
             _dividerLine(),
             _infoRow(Icons.person_outline, 'Buyer', widget.buyerName),
             _dividerLine(),
-            _infoRow(Icons.payments_outlined, 'Amount', 'PKR ${widget.assetPrice}'),
+            _infoRow(
+              Icons.payments_outlined,
+              'Amount',
+              'PKR ${widget.assetPrice}',
+            ),
             if (isLand && widget.fractionAmount != null) ...[
               _dividerLine(),
-              _infoRow(Icons.pie_chart_outline, 'Fractions', '${widget.fractionAmount}'),
+              _infoRow(
+                Icons.pie_chart_outline,
+                'Fractions',
+                '${widget.fractionAmount}',
+              ),
             ],
             _dividerLine(),
             _infoRow(
@@ -1204,7 +1348,11 @@ class _TransferScreenState extends State<TransferScreen> {
                       isLand
                           ? 'This will transfer land fractions on-chain. The buyer will become the official NFT + land owner.'
                           : 'This will transfer the electronics NFT on-chain. The buyer will own both the device and its NFT.',
-                      style: TextStyle(fontSize: 12, color: Colors.amber[900], height: 1.4),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber[900],
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -1218,10 +1366,14 @@ class _TransferScreenState extends State<TransferScreen> {
 
   // ── Step 1: Buyer wallet ─────────────────────────────────────
   Step _stepBuyerWallet() {
-    final hasWallet = _buyerWalletAddress != null && _buyerWalletAddress!.isNotEmpty;
+    final hasWallet =
+        _buyerWalletAddress != null && _buyerWalletAddress!.isNotEmpty;
     return Step(
       title: Text("Buyer's Wallet", style: AppTheme.heading(16)),
-      subtitle: Text(hasWallet ? 'Wallet registered ✅' : 'Not yet connected ⚠️', style: AppTheme.body(12)),
+      subtitle: Text(
+        hasWallet ? 'Wallet registered ✅' : 'Not yet connected ⚠️',
+        style: AppTheme.body(12),
+      ),
       isActive: _currentStep >= 1,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1244,7 +1396,7 @@ class _TransferScreenState extends State<TransferScreen> {
               borderColor: Colors.red[200]!,
               title: '${widget.buyerName} has not connected a wallet.',
               subtitle:
-              'The buyer must connect their MetaMask wallet in the app before you can transfer ownership.',
+                  'The buyer must connect their MetaMask wallet in the app before you can transfer ownership.',
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -1254,7 +1406,9 @@ class _TransferScreenState extends State<TransferScreen> {
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.grey[300]!),
                 foregroundColor: Colors.black87,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -1267,16 +1421,23 @@ class _TransferScreenState extends State<TransferScreen> {
   Step _stepConnectSeller() {
     return Step(
       title: Text('Connect Your Wallet', style: AppTheme.heading(16)),
-      subtitle: Text(_walletConnected
-          ? 'Connected: ${_bs.connectedAddress?.substring(0, 12) ?? ''}…'
-          : 'Not connected', style: AppTheme.body(12)),
+      subtitle: Text(
+        _walletConnected
+            ? 'Connected: ${_bs.connectedAddress?.substring(0, 12) ?? ''}…'
+            : 'Not connected',
+        style: AppTheme.body(12),
+      ),
       isActive: _currentStep >= 2,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Connect the wallet that currently holds the NFT. This wallet will sign the transfer transaction.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 14),
           if (_walletConnected)
@@ -1297,7 +1458,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1327,18 +1490,31 @@ class _TransferScreenState extends State<TransferScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.gavel_rounded, color: Colors.blue[700], size: 18),
+                    Icon(
+                      Icons.gavel_rounded,
+                      color: Colors.blue[700],
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Land Registry Requirements',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, color: Colors.blue[800], fontSize: 13)),
+                    Text(
+                      'Land Registry Requirements',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue[800],
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                _legalPoint('All legal sale documents have been signed by both parties.'),
+                _legalPoint(
+                  'All legal sale documents have been signed by both parties.',
+                ),
                 _legalPoint('The sale deed / transfer deed has been executed.'),
                 _legalPoint('Stamp duty and registration fees have been paid.'),
-                _legalPoint('Land registry has been notified of the pending transfer.'),
+                _legalPoint(
+                  'Land registry has been notified of the pending transfer.',
+                ),
               ],
             ),
           ),
@@ -1358,7 +1534,9 @@ class _TransferScreenState extends State<TransferScreen> {
               ),
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: _accent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -1385,12 +1563,16 @@ class _TransferScreenState extends State<TransferScreen> {
             child: Text(
               isLand
                   ? '1. Opens your wallet to sign the ERC-1155 safeTransferFrom transaction.\n'
-                  '2. Transfers ${widget.fractionAmount ?? 1} fraction(s) of Property #${widget.propertyId} to ${widget.buyerName}.\n'
-                  '3. Updates ownership in the app once confirmed on Polygon Amoy.'
+                        '2. Transfers ${widget.fractionAmount ?? 1} fraction(s) of Property #${widget.propertyId} to ${widget.buyerName}.\n'
+                        '3. Updates ownership in the app once confirmed on Polygon Amoy.'
                   : '1. Opens your wallet to sign the ERC-721 safeTransferFrom transaction.\n'
-                  '2. Transfers Token #${widget.tokenId} to ${widget.buyerName}.\n'
-                  '3. Updates ownership in the app once confirmed on Polygon Amoy.',
-              style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.7),
+                        '2. Transfers Token #${widget.tokenId} to ${widget.buyerName}.\n'
+                        '3. Updates ownership in the app once confirmed on Polygon Amoy.',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 13,
+                height: 1.7,
+              ),
             ),
           ),
           if (_txHash != null) ...[
@@ -1410,7 +1592,10 @@ class _TransferScreenState extends State<TransferScreen> {
                     child: SelectableText(
                       _txHash!,
                       style: TextStyle(
-                          fontSize: 11, color: Colors.grey[500], fontFamily: 'monospace'),
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   ),
                 ],
@@ -1432,12 +1617,17 @@ class _TransferScreenState extends State<TransferScreen> {
           const SizedBox(width: 10),
           SizedBox(
             width: 90,
-            child: Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -1454,7 +1644,12 @@ class _TransferScreenState extends State<TransferScreen> {
         children: [
           Icon(Icons.check_circle_outline, size: 14, color: Colors.blue[600]),
           const SizedBox(width: 6),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, height: 1.4))),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 12, height: 1.4),
+            ),
+          ),
         ],
       ),
     );
@@ -1484,13 +1679,25 @@ class _TransferScreenState extends State<TransferScreen> {
               Icon(icon, color: iconColor, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                  child: Text(title,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(subtitle,
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.black54)),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: Colors.black54,
+            ),
+          ),
           if (note != null) ...[
             const SizedBox(height: 4),
             Text(note, style: TextStyle(fontSize: 12, color: iconColor)),
@@ -1536,10 +1743,12 @@ class BuyerOwnershipAcceptScreen extends StatefulWidget {
   });
 
   @override
-  State<BuyerOwnershipAcceptScreen> createState() => _BuyerOwnershipAcceptScreenState();
+  State<BuyerOwnershipAcceptScreen> createState() =>
+      _BuyerOwnershipAcceptScreenState();
 }
 
-class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen> {
+class _BuyerOwnershipAcceptScreenState
+    extends State<BuyerOwnershipAcceptScreen> {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final _bs = BlockchainServiceEnhanced();
@@ -1555,7 +1764,8 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
 
   String get _trimmedTransactionId => widget.transactionId.trim();
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?> _transactionSnapshotOrNull() async {
+  Future<DocumentSnapshot<Map<String, dynamic>>?>
+  _transactionSnapshotOrNull() async {
     if (_trimmedTransactionId.isEmpty) return null;
     return _db.collection('transactions').doc(_trimmedTransactionId).get();
   }
@@ -1596,7 +1806,12 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
       final uid = _auth.currentUser?.uid;
       if (uid == null) return;
 
-      await _db.collection('users').doc(uid).update({'walletAddress': addr});
+      await SimpleWalletService().linkWalletToUser(
+        uid: uid,
+        walletAddress: addr,
+        conflictMessage:
+            'This MetaMask wallet is already linked to another account. Connect a different MetaMask account for this user.',
+      );
 
       final txDoc = await _transactionSnapshotOrNull();
       final txData = txDoc?.data() ?? _txData ?? {};
@@ -1607,10 +1822,11 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
       if (uid.isNotEmpty) {
         await _notif.notify(
           receiverUid: uid,
-          title       : '✅ Wallet Registered',
-          body        : 'Your wallet address has been saved. The seller can now initiate the transfer.',
-          type        : NotificationType.general,
-          relatedId   : widget.transactionId,
+          title: '✅ Wallet Registered',
+          body:
+              'Your wallet address has been saved. The seller can now initiate the transfer.',
+          type: NotificationType.general,
+          relatedId: widget.transactionId,
         );
       }
 
@@ -1618,11 +1834,12 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
       if (sellerUid.isNotEmpty) {
         await _notif.notify(
           receiverUid: sellerUid,
-          title       : '🟢 Buyer Wallet Ready',
-          body        : '${widget.sellerName.isNotEmpty ? "The buyer" : "Buyer"} has registered their wallet for "$assetTitle". You can now execute the blockchain transfer.',
-          type        : NotificationType.transactionPending,
-          relatedId   : widget.transactionId,
-          payload     : {'assetId': widget.assetId, 'buyerWallet': addr},
+          title: '🟢 Buyer Wallet Ready',
+          body:
+              '${widget.sellerName.isNotEmpty ? "The buyer" : "Buyer"} has registered their wallet for "$assetTitle". You can now execute the blockchain transfer.',
+          type: NotificationType.transactionPending,
+          relatedId: widget.transactionId,
+          payload: {'assetId': widget.assetId, 'buyerWallet': addr},
         );
       }
 
@@ -1634,10 +1851,14 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Wallet connected & saved: ${addr.substring(0, 12)}…'),
+            content: Text(
+              'Wallet connected & saved: ${addr.substring(0, 12)}…',
+            ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -1648,7 +1869,9 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
             content: Text('Error: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -1664,17 +1887,30 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
     return Scaffold(
       backgroundColor: _surface,
       appBar: AppBar(
-        title: Text('Incoming Transfer', style: AppTheme.heading(18, color: Colors.white)),
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppTheme.primaryGradient)),
+        title: Text(
+          'Incoming Transfer',
+          style: AppTheme.heading(18, color: Colors.white),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        ),
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             onPressed: _load,
           ),
         ],
@@ -1684,27 +1920,27 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
           : _error != null
           ? Center(child: Text('Error: $_error'))
           : SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeaderCard(isLand, txCompleted),
-            const SizedBox(height: 16),
-            _buildAssetCard(),
-            const SizedBox(height: 16),
-            if (txCompleted && txHash != null) ...[
-              _buildConfirmationCard(txHash),
-              const SizedBox(height: 16),
-            ],
-            _buildWalletSection(),
-            // ── Review section (shown once transfer is complete) ──
-            if (txCompleted) ...[
-              const SizedBox(height: 16),
-              _buildReviewSection(),
-            ],
-          ],
-        ),
-      ),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeaderCard(isLand, txCompleted),
+                  const SizedBox(height: 16),
+                  _buildAssetCard(),
+                  const SizedBox(height: 16),
+                  if (txCompleted && txHash != null) ...[
+                    _buildConfirmationCard(txHash),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildWalletSection(),
+                  // ── Review section (shown once transfer is complete) ──
+                  if (txCompleted) ...[
+                    const SizedBox(height: 16),
+                    _buildReviewSection(),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 
@@ -1729,53 +1965,69 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE7F3F1),
-                borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7F3F1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.rate_review_rounded,
+                  color: Color(0xFF00695C),
+                  size: 22,
+                ),
               ),
-              child: const Icon(Icons.rate_review_rounded, color: Color(0xFF00695C), size: 22),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'How was your experience?',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF151726)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'How was your experience?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: Color(0xFF151726),
+                  ),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 8),
           const Text(
             'The transfer is complete. Let others know how well '
-                'the seller communicated and cooperated throughout the process.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF6D7A86), height: 1.5),
+            'the seller communicated and cooperated throughout the process.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF6D7A86),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: sellerUid.isEmpty
                 ? null
                 : () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ReviewScreen(
-                  reviewerUid  : _auth.currentUser?.uid ?? '',
-                  revieweeUid  : sellerUid,
-                  revieweeName : widget.sellerName,
-                  transactionId: widget.transactionId,
-                  assetId      : widget.assetId,
-                  reviewerRole : 'buyer',
-                ),
-              ),
-            ),
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReviewScreen(
+                        reviewerUid: _auth.currentUser?.uid ?? '',
+                        revieweeUid: sellerUid,
+                        revieweeName: widget.sellerName,
+                        transactionId: widget.transactionId,
+                        assetId: widget.assetId,
+                        reviewerRole: 'buyer',
+                      ),
+                    ),
+                  ),
             icon: const Icon(Icons.rate_review_rounded),
             label: Text('Review ${widget.sellerName}'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00695C),
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               elevation: 0,
             ),
           ),
@@ -1807,7 +2059,9 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
               shape: BoxShape.circle,
             ),
             child: Icon(
-              txCompleted ? Icons.move_to_inbox_rounded : Icons.hourglass_top_rounded,
+              txCompleted
+                  ? Icons.move_to_inbox_rounded
+                  : Icons.hourglass_top_rounded,
               color: Colors.white,
               size: 44,
             ),
@@ -1816,8 +2070,8 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
           Text(
             txCompleted
                 ? isLand
-                ? '🏡 Land Ownership Transferred!'
-                : '📦 Device Ownership Transferred!'
+                      ? '🏡 Land Ownership Transferred!'
+                      : '📦 Device Ownership Transferred!'
                 : 'Transfer Pending…',
             style: const TextStyle(
               color: Colors.white,
@@ -1851,8 +2105,10 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Asset Details',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const Text(
+            'Asset Details',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
           const SizedBox(height: 12),
           Divider(color: Colors.grey[100], height: 1),
           const SizedBox(height: 12),
@@ -1881,19 +2137,30 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
               const SizedBox(width: 8),
               Text(
                 'Confirmed on Blockchain',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green[800]),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[800],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             'The NFT has been transferred on Polygon Amoy. You are now the on-chain owner.',
-            style: TextStyle(fontSize: 13, color: Colors.green[900], height: 1.5),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.green[900],
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 10),
           SelectableText(
             'Tx: $txHash',
-            style: TextStyle(fontSize: 11, color: Colors.grey[500], fontFamily: 'monospace'),
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[500],
+              fontFamily: 'monospace',
+            ),
           ),
         ],
       ),
@@ -1913,17 +2180,26 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.account_balance_wallet_rounded, color: Colors.grey[700]),
+              Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Colors.grey[700],
+              ),
               const SizedBox(width: 8),
-              const Text('Your Wallet',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Text(
+                'Your Wallet',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             'Connect your MetaMask wallet so the seller can send the NFT directly to your address. '
-                'Your address is stored securely in your profile.',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+            'Your address is stored securely in your profile.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
           if (_walletConnected && _connectedAddress != null) ...[
@@ -1939,16 +2215,29 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: Colors.green[700], size: 18),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green[700],
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
-                      const Text('Wallet connected & saved',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      const Text(
+                        'Wallet connected & saved',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   SelectableText(
                     _connectedAddress!,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.black54),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: Colors.black54,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -1967,7 +2256,9 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
                 backgroundColor: AppTheme.primaryStart,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1975,7 +2266,11 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.warning_amber_rounded, size: 15, color: Colors.orange),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 15,
+                  color: Colors.orange,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -1998,14 +2293,16 @@ class _BuyerOwnershipAcceptScreenState extends State<BuyerOwnershipAcceptScreen>
         children: [
           SizedBox(
             width: 80,
-            child: Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
               value,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               overflow: TextOverflow.ellipsis,
-
             ),
           ),
         ],

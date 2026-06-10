@@ -15,6 +15,7 @@ import 'screens/supplier_screens.dart';
 import 'screens/admin_screen.dart';
 import 'screens/transfer_screen.dart';
 import 'services/push_notification_service.dart';
+import 'blockchain/wallet_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'theme.dart';
 
@@ -201,6 +202,7 @@ class _DigitalGoodsAppState extends State<DigitalGoodsApp> {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
   _themeSubscription;
   bool _notificationHandlersReady = false;
+  String? _activeAuthUid;
 
   @override
   void initState() {
@@ -209,9 +211,18 @@ class _DigitalGoodsAppState extends State<DigitalGoodsApp> {
   }
 
   Future<void> _initializeApp() async {
-    await _syncThemeForUser(FirebaseAuth.instance.currentUser);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    _activeAuthUid = currentUser?.uid;
+    await _syncThemeForUser(currentUser);
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user?.uid == FirebaseAuth.instance.currentUser?.uid &&
+      final nextUid = user?.uid;
+      final uidChanged = nextUid != _activeAuthUid;
+      if (uidChanged) {
+        _activeAuthUid = nextUid;
+        unawaited(SimpleWalletService().resetSession());
+      }
+      if (!uidChanged &&
+          user?.uid == FirebaseAuth.instance.currentUser?.uid &&
           _themeSubscription != null) {
         return;
       }

@@ -550,20 +550,12 @@ class _WalletScreenState extends State<WalletScreen>
   // FIRESTORE HELPERS
   // ════════════════════════════════════════════════════════
   Future<void> _saveWalletToFirestore(String uid, String newAddress) async {
-    final userRef = _firestore.collection("users").doc(uid);
-    final doc = await userRef.get();
-    final oldAddress = doc.data()?["walletAddress"];
-    await userRef.set({
-      "walletAddress": newAddress,
-      "walletAddressLower": newAddress.toLowerCase(),
-    }, SetOptions(merge: true));
-    if (oldAddress != null && oldAddress != newAddress) {
-      await userRef.collection("walletHistory").add({
-        "oldWallet": oldAddress,
-        "newWallet": newAddress,
-        "changedAt": FieldValue.serverTimestamp(),
-      });
-    }
+    await _walletService.linkWalletToUser(
+      uid: uid,
+      walletAddress: newAddress,
+      conflictMessage:
+          "This MetaMask wallet is already linked to another account.",
+    );
   }
 
   // ════════════════════════════════════════════════════════

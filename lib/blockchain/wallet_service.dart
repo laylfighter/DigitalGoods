@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════
 
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +27,8 @@ class SimpleWalletService {
   bool get isInitialized => _initialized;
 
   // 💰 Balance & Escrow Management (Demo Implementation)
-  double _availableBalance = 10.0; // Initial test balance
+  static const double _initialAvailableBalance = 10.0;
+  double _availableBalance = _initialAvailableBalance; // Initial test balance
   double _lockedBalance = 0.0;
 
   double get availableBalance => _availableBalance;
@@ -73,10 +75,7 @@ class SimpleWalletService {
       isTestNetwork: true,
     );
 
-    ReownAppKitModalNetworks.addSupportedNetworks(
-      'eip155',
-      [amoy],
-    );
+    ReownAppKitModalNetworks.addSupportedNetworks('eip155', [amoy]);
 
     _modal = ReownAppKitModal(
       context: context,
@@ -120,7 +119,10 @@ class SimpleWalletService {
   Future<String?> connect(BuildContext context) async {
     await init(context);
 
-    if (isConnected) return _address;
+    if (isConnected && _modal.isConnected) return _address;
+    if (isConnected && !_modal.isConnected) {
+      _resetInMemoryState();
+    }
 
     // This opens the official QR/List modal
     await _modal.openModalView();
@@ -129,12 +131,89 @@ class SimpleWalletService {
   }
 
   Future<void> disconnect() async {
-    if (_modal.isConnected) {
+    if (_initialized && _modal.isConnected) {
       await _modal.disconnect();
     }
-    _address = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('wallet_address');
+    await resetSession(disconnectWallet: false);
+  }
+
+  Future<void> resetSession({bool disconnectWallet = true}) async {
+    if (disconnectWallet && _initialized && _modal.isConnected) {
+      try {
+        await _modal.disconnect();
+      } catch (e) {
+        debugPrint('Wallet disconnect during reset failed: $e');
+      }
+    }
+    _resetInMemoryState();
+    await _clearSavedAddress();
+  }
+
+  Future<void> ensureWalletCanBeLinked({
+    required String uid,
+    required String walletAddress,
+    String conflictMessage =
+        'This MetaMask wallet is already linked to another account.',
+  }) async {
+    final normalizedAddress = walletAddress.trim();
+    final normalizedAddressLower = normalizedAddress.toLowerCase();
+    if (normalizedAddress.isEmpty) {
+      throw Exception('Wallet address is missing. Please reconnect MetaMask.');
+    }
+
+    final linkedUsers = await Future.wait([
+      FirebaseFirestore.instance
+          .collection('users')
+          .where('walletAddress', isEqualTo: normalizedAddress)
+          .limit(2)
+          .get(),
+      FirebaseFirestore.instance
+          .collection('users')
+          .where('walletAddressLower', isEqualTo: normalizedAddressLower)
+          .limit(2)
+          .get(),
+    ]);
+
+    for (final snap in linkedUsers) {
+      for (final doc in snap.docs) {
+        if (doc.id != uid) throw Exception(conflictMessage);
+      }
+    }
+  }
+
+  Future<void> linkWalletToUser({
+    required String uid,
+    required String walletAddress,
+    String conflictMessage =
+        'This MetaMask wallet is already linked to another account.',
+  }) async {
+    final normalizedAddress = walletAddress.trim();
+    final normalizedAddressLower = normalizedAddress.toLowerCase();
+
+    await ensureWalletCanBeLinked(
+      uid: uid,
+      walletAddress: normalizedAddress,
+      conflictMessage: conflictMessage,
+    );
+
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final doc = await userRef.get();
+    final oldAddress = doc.data()?['walletAddress'] as String?;
+
+    await userRef.set({
+      'walletAddress': normalizedAddress,
+      'walletAddressLower': normalizedAddressLower,
+      'walletLinkedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (oldAddress != null &&
+        oldAddress.toLowerCase() != normalizedAddressLower) {
+      await userRef.collection('walletHistory').add({
+        'oldWallet': oldAddress,
+        'newWallet': normalizedAddress,
+        'changedAt': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
   // Helper to handle session updates
@@ -142,16 +221,23 @@ class SimpleWalletService {
     if (_modal.isConnected) {
       _extractAddress();
     } else {
-      _address = null;
+      _resetInMemoryState();
+      unawaited(_clearSavedAddress());
     }
   }
 
   void _extractAddress() async {
     final session = _modal.session;
-    if (session == null) return;
+    if (session == null) {
+      _resetInMemoryState();
+      return;
+    }
 
     final accounts = session.namespaces?['eip155']?.accounts;
-    if (accounts == null || accounts.isEmpty) return;
+    if (accounts == null || accounts.isEmpty) {
+      _resetInMemoryState();
+      return;
+    }
 
     _address = accounts.first.split(':').last;
 
@@ -159,9 +245,21 @@ class SimpleWalletService {
     await prefs.setString('wallet_address', _address!);
   }
 
+  void _resetInMemoryState() {
+    _address = null;
+    _availableBalance = _initialAvailableBalance;
+    _lockedBalance = 0.0;
+  }
+
+  Future<void> _clearSavedAddress() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('wallet_address');
+  }
+
   Future<String?> _waitForConnection() async {
     for (int i = 0; i < 30; i++) {
-      if (isConnected) return _address;
+      if (isConnected && _modal.isConnected) return _address;
+      if (isConnected && !_modal.isConnected) _resetInMemoryState();
       await Future.delayed(const Duration(seconds: 1));
     }
     return null;

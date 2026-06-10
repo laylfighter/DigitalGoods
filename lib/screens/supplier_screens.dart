@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
@@ -19,6 +18,7 @@ import 'qr_generator_screen.dart';
 import 'qr_scanner_enhanced.dart';
 import '../blockchain/blockchain_service.dart';
 import '../blockchain/ipfs_service.dart';
+import '../blockchain/wallet_service.dart';
 import 'wallet_screen.dart';
 import '../widgets/hand_help_tooltip.dart';
 import '../theme.dart';
@@ -69,7 +69,6 @@ String _normalizeDeviceIdentifier(String value) {
 String _compactNumericIdentifier(String value) {
   return value.replaceAll(RegExp(r'[\s-]'), '');
 }
-
 
 bool _validateImeiIdentifier(String value) {
   final imei = _compactNumericIdentifier(value);
@@ -234,6 +233,7 @@ class DocumentStorage {
     };
   }
 }
+
 class SupplierHomeScreen extends StatefulWidget {
   final String type;
   const SupplierHomeScreen({super.key, required this.type});
@@ -675,7 +675,6 @@ class AssetManagementScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
@@ -1065,8 +1064,7 @@ class _AssetFormState extends State<AssetForm> {
         }
         return;
       }
-    } catch (_) {
-    }
+    } catch (_) {}
 
     try {
       final res = await http
@@ -1088,10 +1086,7 @@ class _AssetFormState extends State<AssetForm> {
           return;
         }
       }
-    } catch (_) {
-
-    }
-
+    } catch (_) {}
 
     if (mounted) setState(() => _isFetchingRate = false);
   }
@@ -1552,7 +1547,8 @@ class _AssetFormState extends State<AssetForm> {
                       _serialCtrl,
                       'IMEI Number',
                       Icons.fingerprint_rounded,
-                      keyboardType: TextInputType.number, // Enforces numeric keyboard
+                      keyboardType:
+                          TextInputType.number, // Enforces numeric keyboard
                       validator: (v) {
                         final value = v?.trim() ?? '';
                         if (value.isEmpty) {
@@ -1818,7 +1814,9 @@ class _AssetFormState extends State<AssetForm> {
                       if (widget.type == 'land' && _documents.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Please upload at least one document for the land asset.'),
+                            content: Text(
+                              'Please upload at least one document for the land asset.',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -1957,41 +1955,12 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
     required String creatorUid,
     required String walletAddress,
   }) async {
-    final normalizedAddress = walletAddress.trim();
-    final normalizedAddressLower = normalizedAddress.toLowerCase();
-    if (normalizedAddress.isEmpty) {
-      throw Exception('Wallet address is missing. Please reconnect MetaMask.');
-    }
-
-    final linkedUsers = await Future.wait([
-      db
-          .collection('users')
-          .where('walletAddress', isEqualTo: normalizedAddress)
-          .limit(2)
-          .get(),
-      db
-          .collection('users')
-          .where('walletAddressLower', isEqualTo: normalizedAddressLower)
-          .limit(2)
-          .get(),
-    ]);
-
-    for (final snap in linkedUsers) {
-      for (final doc in snap.docs) {
-        if (doc.id != creatorUid) {
-          throw Exception(
-            'This MetaMask wallet is already linked to another account. '
-            'Connect the wallet linked to this supplier account before adding an asset.',
-          );
-        }
-      }
-    }
-
-    await db.collection('users').doc(creatorUid).set({
-      'walletAddress': normalizedAddress,
-      'walletAddressLower': normalizedAddressLower,
-      'walletLinkedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await SimpleWalletService().linkWalletToUser(
+      uid: creatorUid,
+      walletAddress: walletAddress,
+      conflictMessage:
+          'This MetaMask wallet is already linked to another account. Connect the wallet linked to this supplier account before adding an asset.',
+    );
   }
 
   Future<void> _handleCreate(Map<String, dynamic> data) async {
@@ -2172,7 +2141,10 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
       setState(() => _statusMessage = 'Waiting for blockchain confirmation...');
 
       // Wait for the transaction to be mined (up to ~60 seconds)
-      final confirmed = await blockchain.waitForConfirmation(txHash, retries: 30);
+      final confirmed = await blockchain.waitForConfirmation(
+        txHash,
+        retries: 30,
+      );
       if (!confirmed) {
         throw Exception(
           'Mint transaction was not confirmed on-chain. Please check MetaMask activity before trying again.',
@@ -2516,7 +2488,9 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please upload at least one document for the land asset.'),
+            content: Text(
+              'Please upload at least one document for the land asset.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
