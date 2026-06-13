@@ -15,15 +15,13 @@ import '../services/push_notification_service.dart';
 import 'resale_listing_sheet.dart';
 import 'asset_detail_screen.dart';
 import 'profile_screen.dart';
-import '../widgets/hand_help_tooltip.dart';
 import '../theme.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 final db = FirebaseFirestore.instance;
 
-// ═══════════════════════════════════════════════════════════
+
 // USER HOME SCREEN
-// ═══════════════════════════════════════════════════════════
+
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -498,9 +496,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // MY ASSETS SCREEN (Integrated)
-// ═══════════════════════════════════════════════════════════
+
 
 class MyAssetsScreen extends StatefulWidget {
   const MyAssetsScreen({super.key});
@@ -1477,9 +1475,9 @@ class _SafeCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // LATEST ASSETS — horizontal scroll, last 5
-// ═══════════════════════════════════════════════════════════
+
 
 class _LatestAssetsRow extends StatelessWidget {
   final String category;
@@ -1663,9 +1661,9 @@ class _LatestAssetsRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // ASSET LIST VIEW (Search / Filter Logic)
-// ═══════════════════════════════════════════════════════════
+
 
 class AssetListView extends StatelessWidget {
   final String category;
@@ -1832,9 +1830,9 @@ class AssetListView extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // FAVOURITE BUTTON
-// ═══════════════════════════════════════════════════════════
+
 
 class FavoriteButton extends StatefulWidget {
   final String assetId;
@@ -1915,9 +1913,9 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // ASSET GRID CARD
-// ═══════════════════════════════════════════════════════════
+
 
 class AssetGridCard extends StatelessWidget {
   final String id;
@@ -2119,9 +2117,9 @@ class AssetGridCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+
 // FILTER SHEET
-// ═══════════════════════════════════════════════════════════
+
 
 class FilterSheet extends StatefulWidget {
   final String category;
