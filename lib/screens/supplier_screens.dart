@@ -20,7 +20,6 @@ import '../blockchain/blockchain_service.dart';
 import '../blockchain/ipfs_service.dart';
 import '../blockchain/wallet_service.dart';
 import 'wallet_screen.dart';
-import '../widgets/hand_help_tooltip.dart';
 import '../theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -426,26 +425,6 @@ class SupplierHome extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          HandHelpTooltip(
-            message: 'Click here to add your first asset!',
-            show: showHelp(),
-            offset: const Offset(-100, -10),
-            child: FloatingActionButton.extended(
-              heroTag: 'add_asset_fab',
-              backgroundColor: AppTheme.primaryStart,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text(
-                'Add Asset',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AddAssetScreen(type: type)),
-              ),
-            ),
-          ),
         ],
       ),
     );
