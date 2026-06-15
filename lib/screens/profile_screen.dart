@@ -1416,7 +1416,7 @@ class HelpScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'For support, contact: support@digitalgoods.com',
+              'For support, contact: digitalgoods.support@gmail.com',
               style: TextStyle(color: context.appTextSecondary),
             ),
             const SizedBox(height: 16),
@@ -1429,7 +1429,7 @@ class HelpScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '• How to buy?\n• How to sell?\n• How to verify assets?',
+              '• How to buy?\nBrowse the marketplace, select an asset, complete the payment, and receive ownership through NFT transfer.\n• How to sell?\n List your verified asset on the marketplace, set the price, and transfer ownership to the buyer after purchase.\n• How to verify assets?\nScan the assets QR code or check its NFT record to verify ownership, authenticity, and transaction history.',
               style: TextStyle(color: context.appTextSecondary),
             ),
           ],
