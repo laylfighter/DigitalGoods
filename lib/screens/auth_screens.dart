@@ -16,6 +16,7 @@ import 'package:image/image.dart' as img;
 import 'user_screens.dart';
 import 'supplier_screens.dart';
 import 'admin_screen.dart';
+import 'terms_screen.dart';
 import '../theme.dart';
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
@@ -899,6 +900,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   Uint8List? _photo;
   bool _loading = false;
   bool _obscure = true;
+  bool _agreeToTerms = false;
   final _picker = ImagePicker();
 
   late AnimationController _animCtrl;
@@ -957,6 +959,10 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
     if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
       _showSnack(context, 'Email and password required');
+      return;
+    }
+    if (!_agreeToTerms) {
+      _showSnack(context, 'You must agree to the Terms & Privacy Policy to register', color: Colors.red);
       return;
     }
     setState(() => _loading = true);
@@ -1277,7 +1283,82 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                             ],
 
-                            const SizedBox(height: 28),
+                            const SizedBox(height: 16),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: Checkbox(
+                                    value: _agreeToTerms,
+                                    activeColor: kTeal,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _agreeToTerms = val ?? false;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: AppTheme.body(
+                                        12,
+                                        color: context.appTextSecondary,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: 'I agree to the '),
+                                        WidgetSpan(
+                                          alignment: PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const TermsScreen(initialTabIndex: 0),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Terms of Service',
+                                              style: AppTheme.heading(
+                                                12,
+                                                color: kTeal,
+                                                weight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const TextSpan(text: ' & '),
+                                        WidgetSpan(
+                                          alignment: PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const TermsScreen(initialTabIndex: 1),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Privacy Policy',
+                                              style: AppTheme.heading(
+                                                12,
+                                                color: kTeal,
+                                                weight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
 
                             _GradientButton(
                               label: 'Create Account',

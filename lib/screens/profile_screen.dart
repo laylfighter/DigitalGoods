@@ -13,6 +13,7 @@ import 'stolen_report_screen.dart';
 import 'auth_screens.dart';
 import '../theme.dart';
 import 'EmailSupportScreen.dart';
+import 'terms_screen.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -1438,56 +1439,7 @@ class HelpScreen extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TERMS SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class TermsScreen extends StatelessWidget {
-  const TermsScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.appScaffold,
-      appBar: AppBar(
-        backgroundColor: context.appSurface,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Terms & Privacy',
-          style: TextStyle(
-            color: context.appTextPrimary,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: context.appSurfaceMuted,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.chevron_left_rounded,
-              color: context.appTextPrimary,
-              size: 24,
-            ),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(
-          'Your terms and privacy policy content goes here. '
-              'Replace this placeholder with your real legal text.',
-          style: TextStyle(color: context.appTextSecondary),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN PANEL SCREEN
