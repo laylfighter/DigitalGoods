@@ -1231,6 +1231,22 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
               },
             ),
           ],
+          if (hasBlockchainId) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TransferHistoryScreen(assetId: widget.assetId),
+                  ),
+                ),
+                icon: const Icon(Icons.history),
+                label: const Text('View Transfer History'),
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -1307,23 +1323,44 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   }
 
   Widget _buildBuyerSecondaryActions(BuildContext context, Map<String, dynamic> data) {
-    return Row(
+    final hasBlockchainId = data['blockchainTokenId'] != null;
+    return Column(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _toggleFavorite(context, widget.assetId),
-            icon: const Icon(Icons.favorite_border),
-            label: const Text('Favorite'),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _toggleFavorite(context, widget.assetId),
+                icon: const Icon(Icons.favorite_border),
+                label: const Text('Favorite'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.share),
+                label: const Text('Share'),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.share),
-            label: const Text('Share'),
+        if (hasBlockchainId) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TransferHistoryScreen(assetId: widget.assetId),
+                ),
+              ),
+              icon: const Icon(Icons.history),
+              label: const Text('View Transfer History'),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

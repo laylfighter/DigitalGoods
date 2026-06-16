@@ -62,38 +62,85 @@ class ChatListScreen extends StatelessWidget {
                   final userData = userSnap.data!.data() as Map<String, dynamic>? ?? {};
                   final unread = (chatData['unread_$uid'] ?? 0) as int;
 
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: userData['photoUrl'] != null
-                          ? NetworkImage(userData['photoUrl'])
-                          : null,
-                      child: userData['photoUrl'] == null
-                          ? const Icon(Icons.person)
-                          : null,
-                    ),
-                    title: Text(userData['name'] ?? 'User', style: AppTheme.heading(16)),
-                    subtitle: Text(
-                      chatData['lastMessage'] ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTheme.body(14, color: AppTheme.textSecondary),
-                    ),
-                    trailing: unread > 0
-                        ? Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.primaryStart,
-                        shape: BoxShape.circle,
+                  return Dismissible(
+                    key: Key(chat.id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      color: Colors.red.shade500,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                        size: 28,
                       ),
-                      child: Text(
-                        unread.toString(),
-                        style: AppTheme.body(11, weight: FontWeight.bold, color: Colors.white),
+                    ),
+                    secondaryBackground: Container(
+                      color: Colors.red.shade500,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                        size: 28,
                       ),
-                    )
-                        : null,
-                    // ✅ FIX: Use StatefulBuilder or separate handler to check context
-                    onTap: () => _handleChatTap(context, chat.id, uid, otherUid),
-                    onLongPress: () => _deleteChat(context, chat.id),
+                    ),
+                    confirmDismiss: (direction) async {
+                      return await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete Chat'),
+                          content: const Text('Are you sure you want to delete this chat?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ) ?? false;
+                    },
+                    onDismissed: (direction) => _deleteChat(context, chat.id),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: userData['photoUrl'] != null
+                            ? NetworkImage(userData['photoUrl'])
+                            : null,
+                        child: userData['photoUrl'] == null
+                            ? const Icon(Icons.person)
+                            : null,
+                      ),
+                      title: Text(userData['name'] ?? 'User', style: AppTheme.heading(16)),
+                      subtitle: Text(
+                        chatData['lastMessage'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTheme.body(14, color: AppTheme.textSecondary),
+                      ),
+                      trailing: unread > 0
+                          ? Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryStart,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unread.toString(),
+                          style: AppTheme.body(11, weight: FontWeight.bold, color: Colors.white),
+                        ),
+                      )
+                          : null,
+                      // ✅ FIX: Use StatefulBuilder or separate handler to check context
+                      onTap: () => _handleChatTap(context, chat.id, uid, otherUid),
+                      onLongPress: () => _deleteChat(context, chat.id),
+                    ),
                   );
                 },
               );
